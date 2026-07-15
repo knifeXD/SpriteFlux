@@ -7,6 +7,8 @@ description: Generate game-ready 2D sprite or hand-painted action sequences from
 
 Treat video generation as motion-source acquisition, not as the final game asset. Preserve accepted art, keep provider calls auditable, and reject inconsistent sequences before runtime import.
 
+Before the first provider run, read [references/getting-started.md](references/getting-started.md) with the user and collect the required API, character, action, runtime, and spending inputs. For Seedance Mini cost planning or comparison, also read [references/measured-seedance-mini-study.md](references/measured-seedance-mini-study.md); keep measured examples separate from current official prices.
+
 ## Core workflow
 
 1. Inspect the target project and preserve accepted assets. Identify the playable entry point, canonical sprite contract, existing prompts/references, and fallback sequence.
@@ -67,6 +69,13 @@ python scripts/plan_sequence_batch.py --mode repeat --provider-min-duration 4 --
 python scripts/plan_sequence_batch.py --mode grid --width 1280 --height 720 --rows 2 --cols 2 --target-character-height 64
 ```
 
+Estimate task and accepted-action cost before paying, then replace estimates with receipt tokens:
+
+```text
+python scripts/estimate_action_cost.py --resolution 480p --clips 2 --actions-per-clip 4 --acceptance-rate 0.625
+python scripts/estimate_action_cost.py --resolution 720p --clips 1 --actions-per-clip 8 --actual-tokens 87850 --accepted-actions 2
+```
+
 Design actions and calculate padded canvases before prompt authoring:
 
 ```text
@@ -90,6 +99,7 @@ Run script self-tests after modifying this Skill:
 ```text
 python scripts/plan_sequence_batch.py --self-test
 python scripts/plan_action_storyboard.py --self-test
+python scripts/estimate_action_cost.py --self-test
 python scripts/visualize_motion_plan.py --self-test
 python scripts/validate_sequence.py --self-test
 ```

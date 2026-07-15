@@ -58,11 +58,15 @@ def render(report: dict, costs: dict | None = None) -> str:
                 continue
             tokens = value.get("tokens", value.get("totalTokens", "–"))
             rmb = value.get("rmb", value.get("estimatedRmb", "–"))
+            requested = value.get("requestedDistinctActions", "–")
             accepted = value.get("readableDistinctActions", value.get("acceptedActions", "–"))
             unit = value.get("rmbPerReadableAction", "–")
+            strict = value.get("acceptedActions", value.get("strictIdleAcceptedActions", "–"))
+            strict_unit = value.get("rmbPerAcceptedAction", value.get("rmbPerStrictIdleAcceptedAction", "–"))
             cards.append(
                 f"<div class='cost'><b>{html.escape(str(name))}</b><span>{tokens} tokens</span>"
-                f"<span>¥{rmb}</span><span>{accepted} 可读动作</span><span>¥{unit}/动作</span></div>"
+                f"<span>¥{rmb}</span><span>{requested} 请求 / {accepted} 可读 / {strict} 严格合格</span>"
+                f"<span>¥{unit}/可读动作</span><span>¥{strict_unit}/严格合格动作</span></div>"
             )
         cost_cards = "<section class='costs'>" + "".join(cards) + "</section>"
     return f"""<!doctype html><html lang='zh-CN'><head><meta charset='utf-8'>
@@ -84,8 +88,9 @@ svg rect{{fill:#0d1727;stroke:var(--line)}}svg line{{stroke:#60799b}}svg polylin
 
 def self_test() -> None:
     report = {"canvas": [128, 128], "actions": [{"name": "dodge_forward", "requiredFinalCanvas": [160, 128], "requiredSourceCell": [480, 384], "fitsCanonicalCanvas": False, "roots": [[64, 112], [100, 108], [64, 112]]}]}
-    page = render(report, {"qualities": {"480p": {"tokens": 100, "rmb": 0.1, "readableDistinctActions": 1, "rmbPerReadableAction": 0.1}}})
+    page = render(report, {"qualities": {"480p": {"tokens": 100, "rmb": 0.1, "requestedDistinctActions": 2, "readableDistinctActions": 2, "acceptedActions": 1, "rmbPerReadableAction": 0.05, "rmbPerAcceptedAction": 0.1}}})
     assert "dodge_forward" in page and "需要扩画布" in page and "100 tokens" in page
+    assert "2 请求 / 2 可读 / 1 严格合格" in page and "¥0.1/严格合格动作" in page
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory) / "report.html"
         path.write_text(page, encoding="utf-8")
@@ -113,4 +118,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
