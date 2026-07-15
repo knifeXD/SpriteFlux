@@ -61,7 +61,8 @@ def self_test() -> None:
         (root / "safe.md").write_text("Use Authorization: Bearer $ARK_API_KEY and never paste it.", encoding="utf-8")
         subprocess.run(["git", "-C", str(root), "add", "safe.md"], check=True)
         assert audit(root) == []
-        (root / "unsafe.txt").write_text("Authorization: Bearer abcdefghijklmnopqrstuvwxyz", encoding="utf-8")
+        fake_value = "abcdefghijklm" + "nopqrstuvwxyz"
+        (root / "unsafe.txt").write_text("Authorization: Bearer " + fake_value, encoding="utf-8")
         subprocess.run(["git", "-C", str(root), "add", "unsafe.txt"], check=True)
         assert any("literal-bearer" in item for item in audit(root))
     print("audit_publication_safety self-test: ok")
@@ -85,4 +86,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
