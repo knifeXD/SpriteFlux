@@ -7,7 +7,7 @@ description: Generate game-ready 2D sprite or hand-painted action sequences from
 
 Treat video generation as motion-source acquisition, not as the final game asset. Preserve accepted art, keep provider calls auditable, and reject inconsistent sequences before runtime import.
 
-Before the first provider run, read [references/getting-started.md](references/getting-started.md) with the user and collect the required API, character, action, runtime, and spending inputs. For Seedance Mini cost planning or comparison, also read [references/measured-seedance-mini-study.md](references/measured-seedance-mini-study.md); keep measured examples separate from current official prices.
+On every new user-facing project, first read and follow [references/user-intake-protocol.md](references/user-intake-protocol.md). Use it to tell the user what to provide, produce a free cost/batch preflight, and obtain a bounded paid-call authorization without ever asking the user to paste a secret. Read [references/getting-started.md](references/getting-started.md) for the detailed input contract. For Seedance Mini cost planning or comparison, also read [references/measured-seedance-mini-study.md](references/measured-seedance-mini-study.md); keep measured examples separate from current official prices.
 
 ## Core workflow
 
@@ -59,6 +59,7 @@ Before the first provider run, read [references/getting-started.md](references/g
 - Stop retries when the remaining problem is deterministic post-processing. Do not spend another provider call on crop, keying, timing, scale, or baseline issues that local tools can fix.
 - Keep each model/provider result isolated through generation, extraction, registration, manifest, and runtime selection. Never overwrite a higher-cost accepted result while testing a cheaper model.
 - In Godot, keep 128@2× and 256@1× at one world scale by deriving sprite offset from manifest root/baseline, not per-frame bounds. Convert a requested final-screen outline width back to source texels (`nativeRadius = round(screenPixels / displayScale)`), generate it from current alpha at runtime, and suppress it in normal-preview mode. Verify Nearest/Lossless/no-mipmap import, integer root motion, `start → loop → end`, action return-to-idle, tier switching, and comparison views inside an actual rendered Godot window; headless parsing alone is insufficient.
+- Before committing or pushing this Skill, run `scripts/audit_publication_safety.py`. Never track an API key, Bearer credential, private key, signed result URL, provider task response, receipt, paid source video, private character reference, or user-project output in the public Skill repository. `.gitignore` is a guardrail, not proof; audit the actual tracked file set.
 
 ## Reusable tools
 
@@ -102,6 +103,7 @@ python scripts/plan_action_storyboard.py --self-test
 python scripts/estimate_action_cost.py --self-test
 python scripts/visualize_motion_plan.py --self-test
 python scripts/validate_sequence.py --self-test
+python scripts/audit_publication_safety.py
 ```
 
 ## Delivery

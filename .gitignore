@@ -4,9 +4,26 @@ __pycache__/
 secrets.*
 *.secret
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+credentials*.json
+private/
+.private/
+.secrets/
+runs/
+downloads/
+outputs/
+work/
+artifacts/
 *.mp4
 *.mov
 *.webm
 task-response*.json
+create-response*.json
+receipt*.json
 request-preview*.json
+*signed-url*.txt
 
