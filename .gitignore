@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.DS_Store
+secrets.*
+*.secret
+.env
+*.mp4
+*.mov
+*.webm
+task-response*.json
+request-preview*.json
+
