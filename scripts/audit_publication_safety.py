@@ -26,6 +26,8 @@ SECRET_PATTERNS = {
         re.I,
     ),
     "signed-url": re.compile(r"(?:X-Amz-Signature|X-Tos-Signature|Signature)=[A-Fa-f0-9%]{16,}"),
+    "downstream-project-id": re.compile(r"\b(?:F\d{2}|chr_\d{4}|v\d{3}-[a-z0-9-]+)\b", re.I),
+    "project-cost-total": re.compile(r"(?:project cumulative|project total|项目累计|累计硬上限|费用保持)\s*[:：]?\s*(?:CNY|RMB|¥)?\s*\d", re.I),
 }
 
 
@@ -49,6 +51,8 @@ def audit(root: Path) -> list[str]:
         except (UnicodeDecodeError, OSError):
             continue
         for label, pattern in SECRET_PATTERNS.items():
+            if relative == "scripts/audit_publication_safety.py" and label in ("downstream-project-id", "project-cost-total"):
+                continue
             if pattern.search(text):
                 findings.append(f"{label}: {relative}")
     return findings
@@ -65,6 +69,11 @@ def self_test() -> None:
         (root / "unsafe.txt").write_text("Authorization: Bearer " + fake_value, encoding="utf-8")
         subprocess.run(["git", "-C", str(root), "add", "unsafe.txt"], check=True)
         assert any("literal-bearer" in item for item in audit(root))
+        (root / "project-data.md").write_text("Project cumulative: ¥15.968509 for chr_0001.", encoding="utf-8")
+        subprocess.run(["git", "-C", str(root), "add", "project-data.md"], check=True)
+        findings = audit(root)
+        assert any("downstream-project-id" in item for item in findings)
+        assert any("project-cost-total" in item for item in findings)
     print("audit_publication_safety self-test: ok")
 
 

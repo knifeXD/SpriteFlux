@@ -57,6 +57,7 @@ For the lowest-cost Mini test, request 480p and 4 seconds explicitly. This produ
 - Prefer one camera instruction per shot. For sprite extraction request a fixed camera and reinforce no pan, zoom, cuts, or scale change in text because `camera_fixed` is unsupported.
 - The guide says low, continuous motions are more stable than running, large jumps, or rolls. Treat jump and attack as higher-risk beats and provide extra spatial margin.
 - Avoid verbose, conflicting prompts. Add explicit exclusions for subtitles, logos, watermarks, duplicate subjects, motion blur, VFX, shadows, and background changes as needed.
+- For chroma sprite acquisition, translate those exclusions into separate observable clauses using [clean-chroma-prompt-contract.md](clean-chroma-prompt-contract.md): locked camera/exposure, neutral albedo-reference subject rendering, exact temporally stable key field, body-bound motion texture only, and detached-effect exclusions. This is SpriteFlux workflow guidance built on the official prompt rules; it is not an additional Seedance API field.
 
 ## Multi-subject and reference warnings
 

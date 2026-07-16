@@ -13,9 +13,43 @@ Write constraints in this order:
 7. exclusions;
 8. output packing layout.
 
+For chroma extraction, use the full reusable scaffold in [clean-chroma-prompt-contract.md](clean-chroma-prompt-contract.md). “Green background” by itself is insufficient: the prompt must separately lock neutral subject rendering, stable camera/exposure, exact background field behaviour, and detached-effect exclusions.
+
 Prefer spatial facts over vague animation adjectives. For an overhead strike, say that the weapon head rises above the head, descends on a steep arc, ends below the hands and hips near the ground, and then rebounds. “Powerful attack” alone does not constrain the path.
 
+## Clean motion source and motion-native stylization
+
+Separate animation texture from gameplay or environmental effects in every prompt.
+
+Allowed when the art direction calls for stylized action:
+
+- pose-to-pose squash and stretch;
+- pronounced spring/rubber-body timing: deep anticipation compression, long directional extension, overshoot, recoil, and elastic recovery;
+- controlled anatomy exaggeration at anticipation, travel, contact, and recovery;
+- contour smear that remains visibly derived from the moving limb, hair, cloth, or weapon;
+- a short directional trailing texture, only when explicitly requested, that follows the measured motion vector and disappears as the responsible part settles;
+- selective action-bound blur inside the moving silhouette while the contact/readability pose remains clear.
+
+Spring/rubber-body exaggeration may temporarily push normal proportions much further than ordinary squash/stretch, but it must preserve one continuous body topology, correct action axis/facing, support-foot/root behavior, identity/costume, and a sharp contact pose before recovering exactly to the approved runtime Idle. Extra limbs, disconnected body pieces, wrong-way stretch, permanent proportion drift, and deformation that obscures the action are failures.
+
+Default to no authored trail. For an explicitly authorized body-bound trail, specify six observable properties: responsible part, measured path/direction, elongated shape, placement behind/between previous and current positions, one-to-two-frame lifetime, and disappearance as that part settles. It must mostly overlap the moving silhouette, remain non-emissive and colour-neutral, and never extend ahead of the contact point. “Attached to the limb” alone is never sufficient.
+
+Forbidden in a clean character-motion source unless separately authorized by name:
+
+- hit sparks, impact flashes, starbursts, shockwaves, explosions, energy slashes, projectiles, or target silhouettes;
+- ground cracks, landing dust, footstep clouds, smoke, debris, splashes, environmental displacement, or invented contact surfaces;
+- screen flashes, camera shake, global motion blur, detached afterimages, lighting changes, or particles that outlive the responsible motion.
+- fist/foot glow, aura, orb, blob, circular or elliptical blur, halo, pressure puff, impact disc, bloom, luminous smear, or coloured outline, even when touching or overlapping the responsible body part.
+
+Also forbid baked character lighting when the sprite will be lit at runtime: no directional key, rim, volumetric light, environmental colour cast, contact/cast shadow, reflection, dramatic highlight, or per-action grade. Keep stable neutral albedo-reference illumination and stable white balance.
+
+Write both sides into the provider prompt: name the permitted motion-native deformation and explicitly exclude both detached VFX and body-attached aura/blob failure shapes. A trail is motion-native only when its origin, measured direction, elongated shape, behind-the-part placement, and short lifetime all pass; otherwise fail closed. If it depicts a hit result or world reaction, it is VFX and belongs in a separate asset pass.
+
+When a user cites an existing game or animation as a quality reference, translate it into observable attributes such as snapped key poses, clear silhouette, held impact pose, controlled smear, foreshortening, and dimensional body rotation. Do not request a direct imitation of that title's characters, rendering, proprietary effects, or exact house style.
+
 ## Mandatory action-design preflight
+
+For a roughly 256 px native gameplay character, begin layout selection with one subject at Mini 480p. Choose the fixed aspect ratio only after computing the padded motion envelope; 4:3 is one candidate, not the default for every action. Escalate density, resolution, or model only when this candidate fails pixel, padding, identity, or measured acceptance-yield gates. Estimate the exact planned configuration before each paid request even when a previous request used the same model.
 
 Complete this non-billable stage before every provider call, including retries with a changed prompt or layout:
 
@@ -163,6 +197,8 @@ If the service ignores exact times, preserve the ordered repeat count and stable
 
 ## Low-resolution multi-cell batches
 
+Prefer one subject performing distinct actions sequentially. If the user explicitly requires a same-character grid with distinct actions, never pair complementary semantics such as attack+guard, attack+hit, attack+reaction, or reach+counter. Treat the cells as independent animation previews rather than one scene: each subject owns a fixed anchor and inward-facing motion bound, both envelopes remain disjoint, a wide empty isolation corridor remains untouched, and neither subject has a target, opponent, eye contact, contact event, or shared timing cue. Declare `simultaneousSubjects`, `packingMode: independent_grid_distinct_actions`, and a complete `cellIsolation` contract; paid preflight rejects missing isolation evidence. The source is still failed if the provider creates interaction, contact, a shared effect, or corridor crossing.
+
 Use simultaneous grids only when each cell retains enough source pixels. A 2×2 batch is usually the practical upper bound for 720p character work; test before increasing density.
 
 Seedance 2.0's official prompt guide reports reduced stability when more than four reference people are used, and warns that multi-view character boards can trigger duplicate “twin” subjects. For sprite batching, keep the number of simultaneously generated same-character subjects at four or fewer, explicitly bind each subject to its cell, and prefer a clean single-character reference over a turnaround collage when duplicate clones are appearing.
@@ -192,12 +228,17 @@ Grid prompt rules:
 - Keep every subject centered on its own fixed baseline and forbid crossing cell boundaries.
 - Use different motions in cells only when the model can maintain identity; otherwise repeat variants of the same motion.
 - Chroma-key before splitting. Generated subjects may cross nominal dividers even when the grid appears regular.
+- Use one continuous backing field across all cells. Do not draw or request divider lines, cell panels, alternating fills, or per-cell exposure. Reject full-height or full-width luminance/chroma bands before keying; they indicate the model rendered separate panels instead of one constant extraction field.
+- For a 480p two-column pixel-character batch targeting a 256 px runtime sprite, prefer roughly 300–336 source pixels of canonical-idle visible height when the action envelope still fits. A smaller subject may remain semantically readable but lose stable pixel clusters after extraction and downsampling.
 
 For final low-pixel output, extract at source resolution, register first, then apply nearest-neighbour downsampling and palette quantization. Never use bilinear/bicubic scaling after the final pixel reduction.
 
 ## Reference strategy
 
-- Use one clean first frame to lock identity and framing.
+- For every action of an established game character, use both the approved canonical runtime pixel Idle and an approved front/side/back turnaround as mandatory identity references. The two assets must share the same renderer, native pixel language, palette, proportions, costume, material treatment, and approximate gameplay detail level. Prefer a turnaround authored at the same visible character height and inspected at 1:1 game pixels. Reject concept-art sheets, painterly illustrations, photoreal renders, smooth high-resolution redesigns, or any turnaround whose visual language does not match the runtime Idle.
+- Assign reference roles explicitly. The runtime Idle is the canonical pixel/root/baseline/scale and start/end-pose authority. The turnaround supplies identity evidence for front/back/side anatomy, hair volume, costume construction, asymmetry, and details hidden in the gameplay-facing Idle. Neither may silently override the other; resolve discrepancies before a provider call.
+- Do not create or request action keyframe boards for ordinary actions. Use text plus the mandatory Idle and turnaround by default. Add an action-specific pose/keyframe reference only for a user-declared special need or after a recorded provider failure proves that the ordinary identity set cannot communicate a required pose/path. Keep that board in the same game-art renderer and label it as motion control, never identity authority.
+- Build any chroma upload board at 1:1 native pixels by default. If a provider forces enlargement, use only a declared integer nearest-neighbour scale and record it; never smooth-resample or generatively redraw the runtime pixel Idle.
 - Use one compact motion board to communicate path and rhythm; avoid a dense style collage.
 - When supported, use first+last frames for endpoint control and a separate reference image for identity.
 - When a provider forbids mixing first/last-frame roles with reference media, merge identity and motion constraints into one reference image. If the output must be chroma-keyed, build that merged reference on the exact target key colour; a dark, textured, or scenic reference background can override a text-only request for a flat background, especially on lightweight models.
@@ -212,6 +253,8 @@ Classify failure before retrying:
 - **provider-generation failure:** wrong action plane, camera cut, identity/anatomy drift, missing weapon, mixed cells -> one prompt/reference correction and one retry;
 - **local import failure:** crop, chroma edge, frame timing, baseline, scale, padding -> fix deterministically without another provider call;
 - **asset-contract failure:** insufficient source pixels or clipping caused by layout -> reduce packing density before retrying;
+
+If one isolated prompt/reference correction reproduces the same semantic substitution (for example a bent-joint strike repeatedly becomes a straight-limb strike), stop prompt-only retries for that provider/model. Mark the action unavailable and require a materially different control input, provider capability, or authored fallback. Stronger wording alone is not a new control method. Likewise, when a forbidden detached impact effect reappears after the correction, treat it as provider-generation failure rather than silently accepting the contaminated source because post-processing might hide it.
 - **isolated bad take:** choose another repeat from the same clip before generating again.
 
 Default to at most one automatic paid retry per brief unless the user explicitly authorizes a larger budget.

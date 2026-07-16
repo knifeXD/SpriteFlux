@@ -19,6 +19,20 @@ Probe the file before extraction: coded size, display aspect, duration, average 
 
 Estimate the key from border pixels only when the border is known to be background. For a stable chroma clip, estimate one robust key model from green-dominant border samples across the complete video or take; do not independently re-estimate the key on every frame. Build alpha from color distance plus color dominance, optionally feather 0.5–1.5 pixels at source resolution for non-pixel output, and despill before resizing.
 
+Before writing any keyed frame, quantify the source field itself. Record the shared key RGB, border colour-distance P50/P95/P99, per-sampled-frame border median, maximum temporal drift from the shared key, and the configured limits. Fail closed when spatial variation or temporal drift exceeds the contract. A stronger matte is not a valid cure for a gradient, animated background, exposure/white-balance pulse, floor shadow, glow, or key-coloured lighting on the subject.
+
+Use two complementary background confidences: proximity to the shared key RGB removes ordinary near-key background, while key-channel dominance captures darker/lighter chroma variations and mixed antialiased edges. Combine them into one alpha estimate, then recover edge foreground colour with the compositing equation below. Never choose a different key per frame; that converts background drift into foreground shimmer.
+
+Do not remove a chroma-like pixel solely from its colour score. The candidate background region must also connect to the full-frame border before cell cropping. Preserve enclosed chroma-like pixels as foreground, report their count, and fail closed if the resulting matte contains a transparent region enclosed inside the retained subject. This topology gate prevents costume, skin, and shaded body regions near the key colour from turning into internal holes; it is not permission to dilate the whole silhouette.
+
+Topology protection must restore colour as well as alpha. A pixel that was first classified as key background may already contain key-colour RGB or a despilled near-black value; merely forcing its alpha back to opaque creates dark/green specks inside the body. Before the final spill cap, propagate colour only into topology-protected foreground pixels from adjacent retained foreground with valid colour, using a bounded local median or wavefront and preserving the protected pixel's alpha. Report the recovered-pixel count. Never borrow from transparent background, change the silhouette, globally clamp green, or use this pass to repaint ordinary dark costume detail.
+
+Repeat the topology check on final native-size Beauty/Normal/Mask after shared registration, premultiplied reduction, binary alpha, and palette quantization. A final enclosed transparent region is allowed only when it projects from border-connected background in the preserved full-resolution keyed frame through the recorded source crop and shared transform; report it as source-connected negative space. Treat every unsupported enclosed pixel as matte loss and fail closed. Also fail on declared adjacent foreground-area drops or any channel-alpha mismatch. This source-evidence rule preserves legitimate gaps between hair, cloth, limbs, and equipment without permitting a blanket hole fill.
+
+Alpha integrity does not prove colour stability. At final gameplay size, measure opaque near-black spatial outliers and their frame-to-frame variation inside an eroded foreground core. If video noise or unstable shading becomes isolated black specks after palette mapping, repair only pixels that are substantially darker than their opaque local neighbourhood under an explicit contract; preserve alpha, silhouette, coherent outlines, eyes, seams, and sustained shadow masses. Report repaired pixels per frame and recheck the full loop. Do not use whole-frame blur, temporal averaging, global black removal, grade changes, or lighting to hide RGB flicker.
+
+Run the colour-stability audit again after the shared fixed palette is applied. Nearest palette assignment can map an otherwise moderate source pixel to the darkest palette entry and recreate a speck that did not exist in the pre-palette cleanup. A post-palette repair may change only a small dark connected component that is inside an eroded opaque core, substantially darker than its immediate opaque neighbourhood, and unsupported within a declared motion radius in both temporal neighbours (including the loop seam). Stable eyes, outlines, seams, hair masses, and costume shadows therefore remain protected by connectivity or temporal support. Report this post-palette count separately from pre-palette repairs.
+
 Inspect keyed frames on dark, light, and checkerboard backgrounds. Reject green fringes, holes in similarly colored costume regions, transparent weapons, and background shadows. If costume colors conflict with green, regenerate on another key color or use matte segmentation.
 
 ### Foreground-colour recovery and green-spill suppression
@@ -82,11 +96,16 @@ In the verified 128×128 pixel-character experiment, a conservative three-pixel 
 
 ## Shared registration
 
+If a keyed source contains a contract-forbidden effect but otherwise passes motion and identity QA, preserve the keyed source and remove the effect only into a separate versioned diagnostic layer before registration. Use `scripts/remove_external_vfx.py` with an explicit frame range, ROI, colour gate, minimum removal count, and protected opaque-subject radius. For effects with opaque detached fragments, `removeAllUnprotectedForeground` plus `protectLargestOpaqueComponentOnly` may be used; the tool must fail closed if any protected subject core changes. Inspect the cleaned result on dark, light, and checker backgrounds. A short contour smear attached to the moving body may remain only when the action contract explicitly permits it and it is elongated along measured motion, behind/between prior and current part positions, mostly silhouette-overlapping, non-emissive, colour-neutral, never ahead of contact, and gone within one or two authored frames after deceleration. Circular/elliptical glow, blob, orb, halo, ring, disc, capsule, pressure puff, bloom, or luminous outline is forbidden even when attached to or overlapping a limb or weapon. Unless the product explicitly approves the cleaned source, deterministic removal does not retroactively make the original provider generation visually accepted.
+
+For motion-texture QA, compare the responsible part across adjacent frames and inspect a local ROI. Fail closed when the candidate component is near-isotropic instead of elongated, lies mainly outside the body mask, extends ahead of the measured motion/contact point, changes hue or luminance like emission, or persists after the part settles. This motion-aware check supplements, and never replaces, gameplay-size human inspection.
+
 Registration order:
 
 1. key/matte the full video frame;
 2. select one reference frame or authored root track for the entire take;
 3. compute one uniform scale from camera/canvas geometry, never per-frame alpha height;
+   integer raster dimensions may differ by at most the one-source-pixel quantization bound after rounding; reject larger effective X/Y scale divergence;
 4. compute one X/Y placement from canonical root and baseline;
 5. apply that exact transform to every frame in the take;
 6. record natural root motion separately if the action intentionally lunges or jumps.
