@@ -1,0 +1,18 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "1.0.0",
+  "FriendlyName": "SpriteFlux Unreal Godot Bridge",
+  "Description": "Deterministic editor-only glTF/GLB export for SpriteFlux Unreal-to-Godot exchange packages.",
+  "Category": "Pipeline",
+  "CreatedBy": "SpriteFlux",
+  "EnabledByDefault": false,
+  "CanContainContent": true,
+  "IsBetaVersion": true,
+  "Installed": false,
+  "Plugins": [
+    { "Name": "PythonScriptPlugin", "Enabled": true },
+    { "Name": "EditorScriptingUtilities", "Enabled": true },
+    { "Name": "GLTFExporter", "Enabled": true }
+  ]
+}

@@ -1,4 +1,4 @@
 interface:
-  display_name: "视频生成序列帧"
-  short_description: "将 Seedance 等生成视频稳定拆成可用游戏序列帧"
-  default_prompt: "使用 $generate-video-sprite-sequences 规划并生成一组尺寸一致、可直接导入游戏的动作序列帧。"
+  display_name: "游戏美术生成与动作资产管线"
+  short_description: "验收3D角色、关卡物件、骨骼动作与2D序列"
+  default_prompt: "使用 $generate-video-sprite-sequences 规划并验收3D角色或关卡物件、骨骼动作、像素化表现与2D序列资产。"

@@ -1,11 +1,13 @@
 ---
 name: generate-video-sprite-sequences
-description: Generate game-ready 2D sprite or hand-painted action sequences from Seedance and other video-generation services, including API task submission, prompt/reference planning, distinct-action or repeated-take packing within minimum-duration clips, low-resolution multi-cell batching, precise frame extraction, chroma keying, canonical scale/root/baseline registration, take selection, resource accounting, and runtime manifests. Use when Codex needs to turn AI-generated video into consistent animation frames, compare video providers, reduce per-action generation cost, batch pixel-art motions, or import generated motion into a 2D/HD-2D game.
+description: "Generate and validate game-art candidates from references or video: low-poly or pixel-styled 3D characters, static environment props and modular level assets, optionally rigged character animation, game-ready 2D sequences, and frame-accurate 3D animation previews. Covers provider preflight, image/multiview generation, topology/UV/material/rig acceptance, Tripo-to-DCC or Godot intake, prompt/reference planning, video extraction, registration, pixel export, QA, resource accounting, and versioned manifests. Use when Codex needs to acquire an inspected 3D character or environment asset, turn video into consistent animation frames, compare providers, fit motion to a rig, plan cost, or hand accepted art to a game engine."
 ---
 
 # 视频生成序列帧管线
 
 Treat video generation as motion-source acquisition, not as the final game asset. Preserve accepted art, keep provider calls auditable, and reject inconsistent sequences before runtime import.
+
+Treat AI 3D generation as candidate acquisition in the same way: a provider task marked successful is not evidence that topology, UVs, materials, scale, pivot, silhouette, collision, rigging, or deformation are production-ready. For every Tripo-generated game asset, first read [references/tripo-game-asset-modeling.md](references/tripo-game-asset-modeling.md). For a skinned character, also read [references/tripo-character-modeling.md](references/tripo-character-modeling.md). These references record researched contracts until a reproducible end-to-end run has passed the declared DCC/engine and rendered acceptance gates; do not present documentation-only support as an integrated provider backend.
 
 Current implementation status and planned Preview Lab milestones are recorded in [ROADMAP.md](ROADMAP.md). A planned milestone is not an available capability until its acceptance evidence is complete.
 
@@ -35,9 +37,36 @@ On every new user-facing project, first read and follow [references/user-intake-
     For a Godot 4 runtime or preview, read [references/godot-runtime-preview.md](references/godot-runtime-preview.md) before importing frames or writing the state machine.
 13. Update reusable findings only after an end-to-end run is visually verified.
 
+For true Indexed PNG, editable `.aseprite` sequences, or Aseprite sprite-sheet export, read [references/aseprite-indexed-export.md](references/aseprite-indexed-export.md). Default to the native SpriteFlux Indexed PNG backend. Treat Aseprite as an optional user-provided `.aseprite`/sheet backend after SpriteFlux matte, registration, contour-colour, fixed-grid, shared-palette, and temporal QA. Never bundle/download Aseprite, let it independently quantize a contaminated chroma edge, or label a fallback backend as Aseprite.
+
+For fitting an accepted video action window to an existing Blender armature, or handing a video-derived standard-humanoid animation to an external art library for target-character retargeting, read [references/video-reference-to-3d-action.md](references/video-reference-to-3d-action.md). SpriteFlux owns immutable source frames, PTS, screen-space landmarks, confidence, correction data, motion-source manifests, and comparison QA. The DCC/art-library stage owns target armature inspection, rest-pose alignment, retargeting, deformation review, baking, exchange export, and engine-specific import. Treat pose detection as a proposal, not animation truth, and do not claim an automated backend until its target-version and visual acceptance gates pass.
+
+For the complete reusable route from an accepted Blender character master and engine-authored standard humanoid animation through Unreal IK retargeting, Blender normalization/offline baking, FBX/GLB delivery, and runtime QA, read [references/standard-humanoid-animation-pipeline.md](references/standard-humanoid-animation-pipeline.md). Lock one canonical Blender model version and derive both Unreal and Godot packages from it; never allow engine-local edits to create divergent character meshes. Apply the raw-import normalization gate before target mapping, classify whether an exported root became a bone or the Armature object, reject split centimeter/object-scale domains, and require Unreal's imported root reference scale to be exactly `[1,1,1]`. Reuse one versioned IK Rig/IK Retargeter set per target-skeleton version instead of generating a disposable set per action.
+
+When a new Unreal project needs a self-contained UE-to-Godot glTF/GLB exporter, read [references/portable-unreal-godot-bridge.md](references/portable-unreal-godot-bridge.md). Install the bundled SpriteFlux-owned Editor plugin with `scripts/install_unreal_godot_bridge.ps1`; do not download or runtime-depend on the research-source plugin. Use `RenderOffScreen + SIMPLE` for headless material delivery, emit a hashed inventory report, and keep model/material and animation playback gates independent.
+
+For a reference-to-character-model route, prefer an approved multi-view turnaround over a single view, generate only the topology and texture fidelity that the target presentation needs, run the provider's free riggability check before paid rigging, and keep provider preset animations optional. Download temporary outputs immediately, then perform an independent Blender/DCC audit of mesh integrity, UV/material structure, rest pose, bone semantics, skin weights, root/scale/axes, deformation, and pixel-style rendered silhouette before the model can enter an accepted asset library.
+
+## Generated 3D game-asset routing
+
+Classify a requested model before generation; the class selects required gates and prevents character-only work from leaking into static level art:
+
+- `character_skinned`: require identity, topology, UV/material, skeleton, skin-weight, deformation, animation-exchange, target-engine, and final-render gates. Use the character and humanoid-animation references.
+- `environment_static`: require silhouette, dimensions, topology/normals, UV/material, pivot/ground contact, modular snapping when applicable, collision metadata, LOD/performance, target-engine, and final-render gates. Rigging, skinning, and Actions are not required; reject accidental skeletons or animation tracks in the accepted package.
+- `environment_articulated`: begin with the static gates, then add only the declared moving parts, hierarchy, pivots, and clips needed by the object. Do not silently promote every prop to a skeletal asset.
+
+For static Tripo props and modular level assets, the preferred compatible handoff is Tripo DCC Bridge directly into the target Godot editor, followed by deterministic project-side intake. The Bridge is transport only: preserve an immutable provider export and hash, assign a stable asset ID, create a versioned manifest, wrap the imported scene rather than editing the generated source destructively, author collision separately, and run the same engine/render QA as a manual GLB import. Verify the current Bridge/Godot/browser compatibility before use; do not upgrade an engine or install a plugin without authorization. When the Bridge is unavailable or incompatible, use a versioned GLB export and the same intake contract rather than introducing a different acceptance standard.
+
+Treat “pixel 3D” as an authored asset and render contract, not a fullscreen filter: the mesh must read at the target pixel height, use intentional silhouette planes and broad material regions, preserve useful UVs/texel density or declared vertex colours, and survive the target low-resolution/Nearest/palette/light/shadow profile. Do not call an unclean high-frequency AI mesh a pixel model merely because the final viewport is pixelated.
+
 ## Hard rules
 
+- Before every billable 3D generation, texture, retopology, rigging, or retargeting task, verify the current official model ID, parameter limits, price, and output URL lifetime. Show a bounded itemized estimate and require the same paid-call authorization used by video providers. A documented price is a planning lock, not proof of actual charge; replace it with the returned `credits_consumed` only after an authorized run.
+- Do not call an AI-generated character model production-ready from provider status or a preview render. Require a DCC acceptance report covering topology, disconnected/internal geometry, UVs, material count, texture provenance, units, axes, origin, rest pose, hierarchy, bone mapping, weights, shoulder/hand/foot deformation, garment/hair behavior, target-engine import, and final camera/pixel-style render. Preserve the generated file as an immutable candidate and publish only a new accepted derivative.
+- Use the lowest sufficient texture tier. When the target is a low-resolution or pixel-style render, default to standard texture rather than detailed or 8K texture, and do not pay for separate retopology when the selected low-poly generator can satisfy the declared face budget. Do not remove UVs or material structure merely because the final image will be pixelated.
 - Keep logic FPS independent from authored art FPS. A 30 FPS combat timeline may use 10 FPS art with explicit holds such as `1拍3`.
+- When producing a 3D Action from video reference, preserve the selected source PTS and bake one evaluable target pose per authored source frame only after temporal filtering, foot/root constraints, and visual correction. Do not directly copy noisy detector output to deform bones, change the camera or character scale per frame, or overwrite existing Actions.
+- Prefer a standard-source-skeleton handoff when an engine or motion service produces humanoid animation. Keep the engine-specific standard animation separate from target-character retargeting; deliver stable bone semantics, reference pose, units, axes, root-motion contract, source timing, action semantics, and QA hashes. Do not make a public SpriteFlux workflow depend on one private UE project, target character, absolute asset path, or game runtime.
 - Default every independently reusable action to an idle envelope: begin from the canonical idle pose, perform one complete action, and return to the same canonical idle pose. Allow a different start/end only when gameplay explicitly requires locomotion continuity, a held state, knockdown, death, a combo link, or another declared terminal pose.
 - For side-view pixel characters, default the authored facing to screen-right unless the brief says otherwise. Treat attacks and impacts as frontal from screen-right: block receives force from the right, hit reaction recoils left, forward movement/dodge travels right, and backward movement/dodge travels left while the face and torso remain oriented right. Do not mirror or reverse these semantics implicitly.
 - Author forward and backward walking as seamless locomotion loops with matching cycle endpoints. `walk_forward` moves right while facing right; `walk_backward` moves left while still facing right. A loop cycle is an explicit exception to the idle-envelope rule, but entering and exiting locomotion must still transition cleanly to canonical idle.
@@ -228,6 +257,11 @@ python scripts/render_loop_preview.py --self-test
 python scripts/audit_registered_colour_stability.py --self-test
 python scripts/repair_registered_colour_outliers.py --self-test
 python scripts/build_beauty_coverage_sequence.py --self-test
+python scripts/build_shared_palette_pixel_sequence.py --self-test
+python scripts/audit_shared_palette_pixel_sequence.py --self-test
+python scripts/prepare_fixed_grid_rgba_sequence.py --self-test
+python scripts/export_indexed_png_sequence.py --self-test
+python scripts/export_aseprite_indexed_sequence.py --self-test
 python scripts/repair_registered_contour_spill.py --self-test
 python scripts/key_chroma_sequence.py --self-test
 python scripts/remove_external_vfx.py --self-test
