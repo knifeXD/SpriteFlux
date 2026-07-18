@@ -23,13 +23,13 @@ Create a project-private JSON file. Do not commit private asset paths to public 
   "overwrite": false,
   "assets": [
     {
-      "stableId": "character-v001-material-preview",
+      "stableId": "character-version-material-preview",
       "assetPath": "/Game/Characters/CharacterV001/SK_CharacterV001",
       "materialBakeMode": "SIMPLE",
       "exportUniformScale": 0.01
     },
     {
-      "stableId": "attack-v001",
+      "stableId": "attack-version",
       "assetPath": "/Game/Characters/CharacterV001/Animations/AttackV001",
       "includePreviewMesh": false,
       "materialBakeMode": "SIMPLE",
