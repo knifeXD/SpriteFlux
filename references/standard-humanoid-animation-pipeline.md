@@ -8,7 +8,7 @@ The community exporter is a research source, not a distribution dependency. Its 
 
 ## Scope and ownership
 
-Use this route when Unreal Engine or another animation library creates motion on a stable standard humanoid skeleton, and Blender must retarget, clean, bake, and deliver the motion to a project-owned character skeleton.
+Use this route when Unreal Engine or another animation library creates motion on a stable standard humanoid skeleton and the result must reach a project-owned character in another runtime. Blender is optional: use it for repair, normalization or offline baking, not as a mandatory transit step for an already accepted UE-native asset.
 
 SpriteFlux owns the reusable orchestration contract, interchange manifests, timing/root/contact QA, and public-safe validators. An external art library owns its private engine assets, DCC scenes, target characters, licensed animation sources, editor automation, and generated deliverables. A game project consumes only an accepted versioned package.
 
@@ -18,33 +18,36 @@ SpriteFlux owns the reusable orchestration contract, interchange manifests, timi
 approved motion source
   → standard-source AnimSequence
   → full engine playback QA
-  → one-action standard-skeleton FBX
-  → Blender import normalization
-  → explicit source/target rest-pose and semantic bone mapping
-  → offline retarget and contact correction
-  → evaluated target deform-bone bake
-  → clean-scene FBX/GLB re-import QA
-  → versioned target-character package
+  → persistent UE target retarget + target AnimSequence
+  → choose the declared source route
+       ├─ UE-native: complete versioned GLB exchange package
+       ├─ VRM: animation-only handoff to the original VRM skeleton
+       └─ Blender: normalized/offline target bake + GLB package
+  → clean target-engine re-import QA
   → runtime import and rendered QA
 ```
 
-The engine is a source-animation factory. Do not make it the only place where the target character can play the animation. Prefer an offline target bake so one source animation can serve multiple target rigs and the final target Action can be audited independently.
+The engine is a source-animation factory and, for a UE-native source, may also be the final exchange-conditioning stage. Do not make it the only place where the target character can play the animation. Deliver a portable target-skeleton clip or complete UE-native GLB whose runtime playback can be audited independently.
 
-## Canonical character master gate
+## Canonical source and final exchange gate
 
-Treat the accepted Blender file as the single character-model truth after any provider, scan or external modeling handoff. Do not let Unreal, Godot or a later FBX import silently become a second editable character source.
+Choose the route from the asset's authoritative source before conversion:
 
-The canonical master must contain the accepted mesh topology, UVs, material-slot order, texture bindings, skin weights, rest skeleton, reference pose, unique non-deforming root, ground, physical height and character-forward contract. Give it a stable model ID and version, preserve the immutable provider input separately, and record hashes for the Blender master plus every exported derivative.
+- `ue_native`: prefer this route when the accepted Skeletal Mesh, Skeleton, material set and target animations already live in Unreal, their provenance is auditable, and their licence permits export and use outside Unreal. Treat the exact versioned UE asset set as the final exchange source and export it directly to Godot; do not round-trip through Blender merely to recreate data Unreal already validates.
+- `vrm_canonical`: keep the original VRM as the model, material, morph and SpringBone source. Unreal/VRM4U may broker and retarget animation, but it does not replace the VRM model source.
+- `blender_canonical`: use an accepted Blender file as the single character-model truth when the input is DCC-authored or requires topology, UV, material, skin, rest-pose, root, unit or hierarchy repair.
 
-Export engine-specific packages from that same master:
+Every route must name exactly one canonical source and one versioned final exchange package. The canonical contract must contain accepted mesh topology, UVs, material-slot order, texture bindings, skin weights, rest skeleton, reference pose, unique non-deforming root, ground, physical height and character-forward semantics. Preserve immutable upstream inputs separately and record hashes for the canonical source plus every exported derivative.
+
+For `blender_canonical`, export engine-specific packages from the same master:
 
 - Unreal may receive FBX because its skeletal-animation interchange is FBX-oriented.
 - Godot should normally receive GLB/glTF when the required skin, materials and animations survive its importer; FBX is a controlled compatibility path.
 - The files need not be byte-identical, but their mesh topology, vertex order where promised, UVs, material slots, skin weights, rest-bone hierarchy and reference-pose hash must resolve to the same canonical model version.
 
-Never fix an engine import by editing only the engine copy. Correct the Blender master or the deterministic exporter profile, increment the model version, then regenerate every promised engine derivative. A character manifest must name exactly one canonical master and list Unreal/Godot derivatives with source hash, exporter profile, tool version, units, axes and acceptance state. Reject a delivery when two engine packages claim the same character version but differ in geometry, rest skeleton, weights or material-slot identity without a declared derivative contract.
+Never hide an import defect with Godot node scale, bone renaming or per-action offsets. Correct the route's canonical source or deterministic exporter profile, increment the model version, then regenerate every promised derivative. A character manifest must record `sourceRoute`, the canonical asset/version, Unreal/Godot derivatives, source hash, exporter profile, tool version, units, axes and acceptance state. Reject a delivery when two packages claim the same character version but differ in geometry, rest skeleton, weights or material-slot identity without a declared derivative contract.
 
-The normal ownership order is therefore:
+The `blender_canonical` ownership order is:
 
 ```text
 generated/authored model candidate
@@ -58,7 +61,18 @@ generated/authored model candidate
            → final runtime import and rendered QA
 ```
 
-Unreal is not the canonical model exporter for Godot. Its imported Skeletal Mesh is an audited derivative used for animation production. Unless a diagnostic explicitly requires otherwise, hand animation back as a single target-skeleton Action/AnimSequence export without making the Unreal mesh copy the next model source. Build the Godot mesh, skin, rest skeleton, materials and textures from the accepted Blender master, then merge/bake the accepted animation onto that same skeleton version in the deterministic DCC build. This prevents an Unreal FBX round trip from silently changing bone representation, scale, axes, rest transforms or materials before Godot intake.
+The preferred `ue_native` ownership order is:
+
+```text
+licensed/audited UE Skeletal Mesh + Skeleton + materials
+  → persistent UE retarget assets and accepted target AnimSequence
+  → one versioned UE-native exchange package
+       ├─ mesh + skin + rest skeleton + materials/textures
+       └─ target-skeleton animations with timing/root metadata
+  → Godot clean import, complete playback and rendered QA
+```
+
+For `blender_canonical`, Unreal remains an audited animation-production derivative: hand the accepted target action back to the canonical skeleton and build the Godot model package from Blender. For `ue_native`, Unreal may instead be the final exchange-conditioning stage: export mesh, skin, rest skeleton, materials, textures and accepted target animations from the same exact Skeletal Mesh/Skeleton version. This is the preferred route for stable UE-resident resources because it avoids an unnecessary DCC round trip, but it is accepted only when provenance, non-UE export rights, structural equivalence, materials and complete animation playback all pass. A structural GLB import alone is not proof of animation equivalence.
 
 ## Engine source-animation gate
 
@@ -212,7 +226,7 @@ The manifests must use stable IDs and relative paths and record units, axes, han
 
 Prefer GLB/glTF for the accepted runtime package when the target engine supports it. Keep FBX as the engine/DCC interchange and compatibility path. Re-import both accepted formats independently when both are promised.
 
-Community Unreal-to-Godot exporters that wrap Unreal's built-in glTF exporter may be evaluated as version-pinned animation-only adapters. Require preview-mesh exclusion, explicit `cm → m` conversion, source/target skeleton identity, reference-pose and hierarchy hashes, clip timing/sampling/root metadata, file hashes and a clean target-engine re-import. A generated GLB and a success dialog are not acceptance evidence. Never let such an adapter export the Unreal-imported Skeletal Mesh as the runtime model when the character contract names a canonical DCC master; the runtime mesh, skin, rest skeleton, materials and textures must still derive from that master.
+Unreal-to-Godot exporters that wrap Unreal's built-in glTF exporter may serve either as version-pinned animation-only adapters for `blender_canonical`/`vrm_canonical`, or as complete exchange exporters for `ue_native`. Require explicit `cm → m` conversion, source/target skeleton identity, reference-pose and hierarchy hashes, clip timing/sampling/root metadata, file hashes and a clean target-engine re-import. Exclude the Preview Mesh for animation-only output; for a complete UE-native package, require the mesh, skin, materials and textures to resolve to the declared canonical UE asset version. A generated GLB and a success dialog are not acceptance evidence. Never substitute an Unreal-imported mesh when the manifest names Blender or VRM as canonical.
 
 Test combined-preview, animation-only and mesh-only output as controlled variants before blaming a manual animation mapping step. Compare same-name node rest TRS and every animation sampler input/output numerically. If combined and animation-only curves are identical and all three rest-node transforms are identical, matching playback failure in both target-engine routes is not caused by separating the mesh or renaming track paths; it is an exporter/runtime-equivalence failure until the same UE action phase proves otherwise. Keep UE source playback evidence at the same phase and fail the adapter on any visible bone explosion even when bone count, hierarchy, duration and track resolution pass.
 
